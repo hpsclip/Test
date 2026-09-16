@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXO</title>
+    <title>NEXO - Advanced Web Application Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,7 +20,10 @@
                         activebg: '#404249',
                         textmuted: '#949ba4',
                         textnormal: '#dbdee1',
-                        accent: '#a855f7'
+                        accent: '#a855f7',
+                        accenthover: '#9333ea',
+                        cardbg: '#2b2d31',
+                        inputbg: '#1e1f22'
                     }
                 }
             }
@@ -28,11 +31,19 @@
     </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Scrollbar Styling for Deep UI */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #2b2d31; }
+        ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #111214; }
+        .no-select { user-select: none; }
+    </style>
 </head>
-<body class="bg-darkbg text-textnormal font-sans h-[100dvh] flex overflow-hidden select-none m-0 p-0">
+<body class="bg-darkbg text-textnormal font-sans h-[100dvh] flex overflow-hidden no-select m-0 p-0">
 
-    <!-- Far Left Server Rail -->
-    <nav class="w-[72px] bg-serverbg flex flex-col items-center py-3 space-y-2 shrink-0 z-30 border-r border-[#1f2023]">
+    <!-- ==================== SECTION 1: SERVER RAIL ==================== -->
+    <nav class="w-[72px] bg-serverbg flex flex-col items-center py-3 space-y-2 shrink-0 z-30 border-r border-[#1f2023]" id="server-rail">
         <button onclick="switchView('dm')" id="nav-btn-dm" class="w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group" title="Direct Messages">
             <i class="fa-solid fa-user-group text-lg"></i>
             <div id="dm-pill" class="absolute left-0 w-1 h-2 bg-white rounded-r-full scale-y-0 transition-transform duration-200"></div>
@@ -40,96 +51,235 @@
 
         <div class="w-8 h-[2px] bg-[#35363c] rounded"></div>
 
-        <button onclick="switchView('server')" id="nav-btn-server" class="w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center font-bold text-base transition-all duration-200 relative group shadow-lg" title="NEXO">
-            <span>N</span>
-            <div id="server-pill" class="absolute left-0 w-1 h-10 bg-white rounded-r-full scale-y-100 transition-transform duration-200"></div>
+        <div id="server-list-container" class="flex flex-col space-y-2 w-full items-center overflow-y-auto flex-1 py-1">
+            <button onclick="switchView('server', 'nexo')" id="nav-btn-nexo" class="w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center font-bold text-base transition-all duration-200 relative group shadow-lg" title="NEXO Core">
+                <span>N</span>
+                <div id="server-pill-nexo" class="absolute left-0 w-1 h-10 bg-white rounded-r-full scale-y-100 transition-transform duration-200"></div>
+            </button>
+        </div>
+
+        <button onclick="openAddServerModal()" class="w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-emerald-500 text-emerald-500 hover:text-white flex items-center justify-center transition-all duration-200 group text-lg" title="Add a Server">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <button onclick="openSettingsModal()" class="w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-zinc-600 text-textmuted hover:text-white flex items-center justify-center transition-all duration-200 group text-lg" title="User Settings">
+            <i class="fa-solid fa-gear"></i>
         </button>
     </nav>
 
-    <!-- Secondary Sidebar -->
+    <!-- ==================== SECTION 2: SIDEBAR & CHANNELS ==================== -->
     <div id="sidebar" class="absolute md:relative left-[72px] md:left-0 inset-y-0 w-60 bg-sidebarbg flex flex-col z-20 transform -translate-x-full md:translate-x-0 transition-transform duration-200 border-r border-[#1f2023] shrink-0">
+        <!-- Sidebar Header -->
         <div class="h-12 border-b border-[#1f2023] flex items-center justify-between px-4 font-bold text-white text-sm shadow-sm shrink-0">
-            <span id="sidebar-title" class="truncate">NEXO</span>
-            <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            <span id="sidebar-title" class="truncate">NEXO Workspace</span>
+            <div class="flex items-center space-x-2">
+                <button onclick="openServerSettings()" class="text-textmuted hover:text-white text-xs" title="Server Settings"><i class="fa-solid fa-sliders"></i></button>
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
         </div>
 
+        <!-- Sidebar Content Tree -->
         <div id="sidebar-content" class="flex-1 overflow-y-auto px-2 py-3 space-y-4"></div>
 
-        <div class="bg-[#232428] h-14 px-2 flex items-center justify-between shrink-0">
-            <div onclick="editProfile()" class="flex items-center space-x-2 cursor-pointer hover:bg-hoverbg p-1 rounded-md transition flex-1 min-w-0 mr-2">
-                <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0 uppercase" id="user-initial">P</div>
+        <!-- User Profile Footer Bar -->
+        <div class="bg-[#232428] h-14 px-2 flex items-center justify-between shrink-0 border-t border-[#1f2023]">
+            <div onclick="openSettingsModal()" class="flex items-center space-x-2 cursor-pointer hover:bg-hoverbg p-1 rounded-md transition flex-1 min-w-0 mr-1">
+                <div class="relative">
+                    <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0 uppercase" id="user-initial">P</div>
+                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-serverbg"></div>
+                </div>
                 <div class="min-w-0">
                     <div id="display-username" class="text-xs font-bold text-white truncate">Proxy</div>
-                    <div class="text-[10px] text-textmuted">Online</div>
+                    <div id="display-status-text" class="text-[10px] text-textmuted truncate">Online & Ready</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-0.5 text-textmuted">
+                <button onclick="toggleMicrophone()" id="mic-toggle-btn" class="w-8 h-8 rounded hover:bg-hoverbg hover:text-white flex items-center justify-center text-xs transition" title="Toggle Mic"><i class="fa-solid fa-microphone"></i></button>
+                <button onclick="toggleDeafen()" id="deaf-toggle-btn" class="w-8 h-8 rounded hover:bg-hoverbg hover:text-white flex items-center justify-center text-xs transition" title="Toggle Deafen"><i class="fa-solid fa-headphones"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backdrop for Mobile Navigation Drawer -->
+    <div id="backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-10 hidden md:hidden"></div>
+
+    <!-- ==================== SECTION 3: MAIN CHAT PANEL ==================== -->
+    <div class="flex-1 flex flex-col h-full bg-chatbg min-w-0 relative">
+        <!-- Chat Header Bar -->
+        <div class="h-12 border-b border-[#1f2023] flex items-center justify-between px-4 shrink-0 space-x-3 shadow-sm z-10 bg-chatbg">
+            <div class="flex items-center space-x-3 min-w-0">
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white text-lg"><i class="fa-solid fa-bars"></i></button>
+                <div class="flex items-center space-x-2 min-w-0">
+                    <span id="current-chat-icon" class="text-textmuted text-base">#</span>
+                    <span id="current-chat-name" class="font-bold text-white text-sm truncate">general</span>
+                    <span id="current-chat-desc" class="hidden md:inline text-xs text-textmuted pl-2 border-l border-[#3f4147] truncate">Welcome to the core channel.</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 text-textmuted">
+                <button onclick="openSearchModal()" class="hover:text-white text-sm" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button onclick="toggleMemberList()" class="hover:text-white text-sm" title="Member List"><i class="fa-solid fa-users"></i></button>
+            </div>
+        </div>
+
+        <!-- Inner Chat Layout (Messages + Member List) -->
+        <div class="flex-1 flex overflow-hidden relative">
+            <!-- Message Stream Area -->
+            <div class="flex-1 flex flex-col h-full min-w-0 relative">
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col"></div>
+
+                <!-- Chat Input Box -->
+                <div class="p-4 shrink-0 bg-chatbg">
+                    <div class="bg-[#383a40] rounded-xl flex items-center px-4 py-3 shadow-md border border-[#3f4147]/40 focus-within:border-accent transition">
+                        <button onclick="triggerAttachment()" class="text-textmuted hover:text-white mr-3 shrink-0 text-sm" title="Upload File"><i class="fa-solid fa-circle-plus"></i></button>
+                        <input id="message-input" type="text" placeholder="Message #general" onkeydown="handleKeydown(event)"
+                            class="w-full bg-transparent text-white placeholder-textmuted text-sm focus:outline-none">
+                        <div class="flex items-center space-x-3 ml-3 shrink-0 text-textmuted">
+                            <button onclick="insertEmoji('😊')" class="hover:text-white text-sm"><i class="fa-solid fa-face-smile"></i></button>
+                            <button onclick="sendMessage()" class="bg-accent hover:bg-accenthover text-white w-8 h-8 rounded-lg flex items-center justify-center transition shadow">
+                                <i class="fa-solid fa-paper-plane text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member List Sidebar Panel -->
+            <div id="member-sidebar" class="w-60 bg-[#2b2d31] border-l border-[#1f2023] flex flex-col shrink-0 hidden lg:flex">
+                <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                    <div>
+                        <div class="text-[11px] font-bold text-textmuted uppercase tracking-wider mb-2">Online — 3</div>
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2 p-1.5 rounded hover:bg-hoverbg cursor-pointer transition">
+                                <div class="relative w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-xs">P</div>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-white truncate">Proxy</div>
+                                    <div class="text-[10px] text-textmuted truncate">Coding NEXO app</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 p-1.5 rounded hover:bg-hoverbg cursor-pointer transition">
+                                <div class="relative w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">M</div>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-white truncate">Melique</div>
+                                    <div class="text-[10px] text-textmuted truncate">Playing Fortnite</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 p-1.5 rounded hover:bg-hoverbg cursor-pointer transition">
+                                <div class="relative w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">T</div>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-white truncate">Tamarie</div>
+                                    <div class="text-[10px] text-textmuted truncate">Building scripts</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-10 hidden md:hidden"></div>
-
-    <!-- Main Chat Content Panel -->
-    <div class="flex-1 flex flex-col h-full bg-chatbg min-w-0 relative">
-        <div class="h-12 border-b border-[#1f2023] flex items-center px-4 shrink-0 space-x-3 shadow-sm z-10 bg-chatbg">
-            <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white text-lg"><i class="fa-solid fa-bars"></i></button>
-            <div class="flex items-center space-x-2 min-w-0">
-                <span id="current-chat-icon" class="text-textmuted text-base">#</span>
-                <span id="current-chat-name" class="font-bold text-white text-sm truncate">general</span>
+    <!-- ==================== SECTION 4: MODALS & OVERLAYS ==================== -->
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#313338] w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#3f4147]">
+            <div class="p-6 border-b border-[#3f4147] flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white">User Settings & Preferences</h2>
+                <button onclick="closeSettingsModal()" class="text-textmuted hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-        </div>
-
-        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col"></div>
-
-        <div class="p-4 shrink-0 bg-chatbg border-t border-[#26282c]">
-            <div class="bg-[#383a40] rounded-xl flex items-center px-4 py-3 shadow-md">
-                <input id="message-input" type="text" placeholder="Message #general" onkeydown="handleKeydown(event)"
-                    class="w-full bg-transparent text-white placeholder-textmuted text-sm focus:outline-none">
-                <button onclick="sendMessage()" class="text-textmuted hover:text-white ml-3 shrink-0 bg-accent hover:bg-purple-600 w-8 h-8 rounded-lg flex items-center justify-center transition shadow">
-                    <i class="fa-solid fa-paper-plane text-white text-xs"></i>
-                </button>
+            <div class="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+                <div>
+                    <label class="block text-xs font-bold text-textmuted uppercase tracking-wider mb-2">Display Username</label>
+                    <input id="settings-username-input" type="text" class="w-full bg-inputbg border border-[#1f2023] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-textmuted uppercase tracking-wider mb-2">Custom Status Message</label>
+                    <input id="settings-status-input" type="text" class="w-full bg-inputbg border border-[#1f2023] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent" value="Online & Ready">
+                </div>
+                <div class="pt-4 border-t border-[#3f4147] flex justify-between">
+                    <button onclick="exportData()" class="px-4 py-2 bg-[#2b2d31] hover:bg-hoverbg text-white text-xs font-bold rounded-lg transition">Export Data JSON</button>
+                    <button onclick="saveSettings()" class="px-5 py-2 bg-accent hover:bg-accenthover text-white text-xs font-bold rounded-lg transition shadow">Save Changes</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Add Server Modal -->
+    <div id="server-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#313338] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#3f4147]">
+            <div class="p-6 border-b border-[#3f4147] flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white">Create a New Server</h2>
+                <button onclick="closeAddServerModal()" class="text-textmuted hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-textmuted uppercase tracking-wider mb-2">Server Name</label>
+                    <input id="new-server-name" type="text" placeholder="e.g. Code Hub" class="w-full bg-inputbg border border-[#1f2023] rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-accent">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="createNewServer()" class="px-5 py-2 bg-accent hover:bg-accenthover text-white text-xs font-bold rounded-lg transition shadow">Create Server</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden File Input for Attachments -->
+    <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileUpload(event)">
+
+    <!-- ==================== SECTION 5: APP LOGIC & ARCHITECTURE ==================== -->
     <script>
+        // Full State Object with robust defaults
         let appData = {
             username: "Proxy",
+            statusText: "Online & Ready",
             currentView: "server",
+            currentServerId: "nexo",
             currentId: "general",
+            micMuted: false,
+            deafened: false,
             servers: [
                 {
                     id: "nexo",
                     name: "NEXO",
+                    icon: "N",
                     channels: [
-                        { id: "general", name: "general", type: "text" },
-                        { id: "code", name: "code-scripts", type: "text" },
-                        { id: "lounge", name: "voice-lounge", type: "voice" }
+                        { id: "general", name: "general", type: "text", desc: "General discussion lounge." },
+                        { id: "code", name: "code-scripts", type: "text", desc: "Share Tampermonkey and web scripts." },
+                        { id: "lounge", name: "voice-lounge", type: "voice", desc: "Voice channel lobby." }
                     ]
                 }
             ],
-            dms: [],
+            dms: [
+                { id: "dm-melique", name: "Melique", status: "Playing Fortnite" },
+                { id: "dm-tamarie", name: "Tamarie", status: "Coding" }
+            ],
             messages: {
                 "general": [
-                    { user: "System", text: "Welcome to NEXO! Channels and chats ready.", time: "12:00 PM" }
+                    { user: "System", text: "Welcome to NEXO core application suite. Fully loaded.", time: "12:00 PM" },
+                    { user: "Proxy", text: "Ready to deploy this to GitHub Pages.", time: "12:01 PM" }
                 ],
                 "code": [
-                    { user: "System", text: "Drop your scripts and code snippets here.", time: "12:01 PM" }
+                    { user: "System", text: "Drop your userscripts and code snippets here.", time: "12:02 PM" }
                 ],
                 "lounge": [
-                    { user: "System", text: "Voice channel lobby chat.", time: "12:02 PM" }
+                    { user: "System", text: "Voice channel text companion room.", time: "12:03 PM" }
+                ],
+                "dm-melique": [
+                    { user: "Melique", text: "Yo, are we running custom maps later?", time: "11:30 AM" }
+                ],
+                "dm-tamarie": [
+                    { user: "Tamarie", text: "Check out this GitHub repository update.", time: "10:15 AM" }
                 ]
             }
         };
 
+        // Persistent Storage Handlers
         function loadStorage() {
-            const saved = localStorage.getItem('nexo_pure_data');
+            const saved = localStorage.getItem('nexo_massive_app_v2');
             if (saved) {
-                try { appData = JSON.parse(saved); } catch (e) { console.error(e); }
+                try { appData = JSON.parse(saved); } catch (e) { console.error("Error loading storage:", e); }
             }
         }
 
         function saveStorage() {
-            localStorage.setItem('nexo_pure_data', JSON.stringify(appData));
+            localStorage.setItem('nexo_massive_app_v2', JSON.stringify(appData));
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -137,6 +287,7 @@
             renderUI();
         });
 
+        // UI View Switching & Navigation Engine
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('backdrop');
@@ -149,7 +300,9 @@
             if (viewType === 'dm') {
                 appData.currentId = targetId || (appData.dms.length > 0 ? appData.dms[0].id : null);
             } else {
-                appData.currentId = targetId || 'general';
+                appData.currentServerId = targetId || appData.servers[0].id;
+                const activeServer = appData.servers.find(s => s.id === appData.currentServerId);
+                appData.currentId = activeServer && activeServer.channels.length > 0 ? activeServer.channels[0].id : 'general';
             }
             saveStorage();
             renderUI();
@@ -164,198 +317,10 @@
             renderUI();
         }
 
+        // Comprehensive UI Render Pipeline
         function renderUI() {
-            const dmBtn = document.getElementById('nav-btn-dm');
-            const serverBtn = document.getElementById('nav-btn-server');
-            const dmPill = document.getElementById('dm-pill');
-            const serverPill = document.getElementById('server-pill');
-
-            if (appData.currentView === 'dm') {
-                dmBtn.className = "w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center transition-all duration-200 relative group shadow-lg";
-                serverBtn.className = "w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group";
-                dmPill.classList.add('scale-y-100');
-                serverPill.classList.remove('scale-y-100');
-                serverPill.classList.add('scale-y-0');
-            } else {
-                serverBtn.className = "w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center transition-all duration-200 relative group shadow-lg";
-                dmBtn.className = "w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group";
-                serverPill.classList.add('scale-y-100');
-                dmPill.classList.remove('scale-y-100');
-                dmPill.classList.add('scale-y-0');
-            }
-
-            document.getElementById('display-username').innerText = appData.username;
-            document.getElementById('user-initial').innerText = appData.username.charAt(0).toUpperCase();
-
-            const sidebarTitle = document.getElementById('sidebar-title');
-            const sidebarContent = document.getElementById('sidebar-content');
-
-            if (appData.currentView === 'dm') {
-                sidebarTitle.innerText = "Direct Messages";
-                sidebarContent.innerHTML = `
-                    <div class="space-y-1">
-                        <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
-                            <span>Direct Messages</span>
-                            <button onclick="startDM()" class="hover:text-white" title="New DM"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                        ${appData.dms.length === 0 ? '<div class="text-xs text-textmuted px-2 py-4 text-center">No direct messages yet. Click + to add a friend.</div>' : ''}
-                        ${appData.dms.map(d => `
-                            <button onclick="selectChat('${d.id}')" 
-                                class="w-full flex items-center px-2 py-2 rounded-lg text-xs font-medium transition ${appData.currentId === d.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
-                                <div class="w-7 h-7 rounded-full bg-accent/30 text-accent font-bold text-xs flex items-center justify-center mr-2 shrink-0 uppercase">${d.name.charAt(0)}</div>
-                                <div class="text-left truncate">
-                                    <div class="font-bold text-white truncate">${escapeHtml(d.name)}</div>
-                                    <div class="text-[10px] text-textmuted truncate">${d.status}</div>
-                                </div>
-                            </button>
-                        `).join('')}
-                    </div>
-                `;
-            } else {
-                sidebarTitle.innerText = "NEXO";
-                sidebarContent.innerHTML = `
-                    <div class="space-y-4">
-                        <div>
-                            <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
-                                <span>Text Channels</span>
-                                <button onclick="createChannel('text')" class="hover:text-white"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                            <div class="space-y-[2px]">
-                                ${appData.servers[0].channels.filter(c => c.type === 'text').map(c => `
-                                    <button onclick="selectChat('${c.id}')" 
-                                        class="w-full flex items-center px-2 py-1.5 rounded text-xs font-medium transition ${appData.currentId === c.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
-                                        <span class="mr-1.5 text-sm">#</span>
-                                        <span class="truncate">${c.name}</span>
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
-                                <span>Voice Channels</span>
-                                <button onclick="createChannel('voice')" class="hover:text-white"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                            <div class="space-y-[2px]">
-                                ${appData.servers[0].channels.filter(c => c.type === 'voice').map(c => `
-                                    <button onclick="selectChat('${c.id}')" 
-                                        class="w-full flex items-center px-2 py-1.5 rounded text-xs font-medium transition ${appData.currentId === c.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
-                                        <span class="mr-1.5 text-sm">🔊</span>
-                                        <span class="truncate">${c.name}</span>
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            let chatName = "general";
-            let chatIcon = "#";
-            if (appData.currentView === 'dm') {
-                const dmObj = appData.dms.find(d => d.id === appData.currentId);
-                chatName = dmObj ? dmObj.name : "Select a DM";
-                chatIcon = "@";
-            } else {
-                const chanObj = appData.servers[0].channels.find(c => c.id === appData.currentId);
-                chatName = chanObj ? chanObj.name : "general";
-                chatIcon = chanObj && chanObj.type === 'voice' ? '🔊' : '#';
-            }
-
-            document.getElementById('current-chat-name').innerText = chatName;
-            document.getElementById('current-chat-icon').innerText = chatIcon;
-            document.getElementById('message-input').placeholder = appData.currentView === 'dm' && appData.dms.length === 0 ? `No DM selected` : `Message ${chatIcon === '#' ? '#' : ''}${chatName}`;
-
-            renderMessages();
-        }
-
-        function renderMessages() {
-            const container = document.getElementById('messages-container');
-            if (!appData.currentId) {
-                container.innerHTML = '<div class="text-textmuted text-center my-auto text-sm">Select or start a direct message to begin chatting.</div>';
-                return;
-            }
-            const msgs = appData.messages[appData.currentId] || [];
-
-            container.innerHTML = msgs.map(m => `
-                <div class="flex items-start space-x-3">
-                    <div class="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0 uppercase">${m.user.charAt(0)}</div>
-                    <div class="min-w-0">
-                        <div class="flex items-baseline space-x-2">
-                            <span class="font-bold text-white text-xs">${escapeHtml(m.user)}</span>
-                            <span class="text-[10px] text-textmuted">${m.time}</span>
-                        </div>
-                        <p class="text-sm text-textnormal break-words mt-0.5">${escapeHtml(m.text)}</p>
-                    </div>
-                </div>
-            `).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function sendMessage() {
-            if (!appData.currentId) return;
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (!appData.messages[appData.currentId]) {
-                appData.messages[appData.currentId] = [];
-            }
-
-            appData.messages[appData.currentId].push({
-                user: appData.username,
-                text: text,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
-
-            input.value = '';
-            saveStorage();
-            renderMessages();
-        }
-
-        function handleKeydown(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
-
-        function createChannel(type) {
-            const name = prompt(`Enter ${type} channel name:`);
-            if (!name || !name.trim()) return;
-            const id = name.trim().toLowerCase().replace(/\s+/g, '-');
-
-            if (!appData.servers[0].channels.some(c => c.id === id)) {
-                appData.servers[0].channels.push({ id, name: id, type });
-                appData.messages[id] = [{ user: "System", text: `Channel #${id} created.`, time: "Now" }];
-                saveStorage();
-                renderUI();
-            }
-        }
-
-        function startDM() {
-            const name = prompt("Enter username to message:");
-            if (!name || !name.trim()) return;
-            const cleanName = name.trim();
-            const id = 'dm-' + cleanName.toLowerCase().replace(/\s+/g, '-');
-
-            if (!appData.dms.some(d => d.id === id)) {
-                appData.dms.push({ id, name: cleanName, status: "Active" });
-                appData.messages[id] = [{ user: cleanName, text: `Direct message thread started with ${cleanName}.`, time: "Now" }];
-                saveStorage();
-                switchView('dm', id);
-            } else {
-                switchView('dm', id);
-            }
-        }
-
-        function editProfile() {
-            const newName = prompt("Enter your new handle:", appData.username);
-            if (!newName || !newName.trim()) return;
-            appData.username = newName.trim().substring(0, 16);
-            saveStorage();
-            renderUI();
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-    </script>
-</body>
-</html>
+            // Render Server Rail Navigation Icons
+            const serverListContainer = document.getElementById('server-list-container');
+            serverListContainer.innerHTML = appData.servers.map(s => `
+                <button onclick="switchView('server', '${s.id}')" id="nav-btn-${s.id}" 
+                    class="w-12 h-12 rounded-${appData.currentView === 'server' && appData.curr
