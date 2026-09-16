@@ -1,213 +1,361 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overclocked - Audio & Media Hub</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background: #1e1f22; color: #dbdee1; height: 100vh; display: flex; overflow: hidden; }
-        .sidebar { width: 72px; background: #111214; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; border-right: 1px solid #2b2d31; }
-        .server-icon { width: 48px; height: 48px; border-radius: 50%; background: #5865f2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .server-icon:hover { border-radius: 16px; background: #4752c4; }
-        .main-panel { flex: 1; display: flex; flex-direction: column; background: #313338; }
-        .header { height: 48px; border-bottom: 1px solid #2b2d31; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: #fff; gap: 8px; }
-        .content { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow-y: auto; }
-        .card { background: #2b2d31; border-radius: 8px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .card h3 { margin-bottom: 12px; color: #fff; font-size: 16px; }
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
-        button, label.btn { background: #5865f2; color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
-        button:hover, label.btn:hover { background: #4752c4; }
-        button.secondary { background: #4e5058; }
-        button.secondary:hover { background: #6d6f78; }
-        input[type="range"] { width: 100%; accent-color: #5865f2; margin-top: 8px; }
-        canvas { width: 100%; height: 120px; background: #111214; border-radius: 4px; margin-top: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXO</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#313338',
+                        chatbg: '#313338',
+                        serverbg: '#1e1f22',
+                        sidebarbg: '#2b2d31',
+                        hoverbg: '#35373c',
+                        activebg: '#404249',
+                        textmuted: '#949ba4',
+                        textnormal: '#dbdee1',
+                        accent: '#a855f7'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-darkbg text-textnormal font-sans h-[100dvh] flex overflow-hidden select-none m-0 p-0">
 
-    <div class="sidebar">
-        <div class="server-icon" title="Overclocked Hub">O</div>
-    </div>
+    <!-- Far Left Server Rail -->
+    <nav class="w-[72px] bg-serverbg flex flex-col items-center py-3 space-y-2 shrink-0 z-30 border-r border-[#1f2023]">
+        <button onclick="switchView('dm')" id="nav-btn-dm" class="w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group" title="Direct Messages">
+            <i class="fa-solid fa-user-group text-lg"></i>
+            <div id="dm-pill" class="absolute left-0 w-1 h-2 bg-white rounded-r-full scale-y-0 transition-transform duration-200"></div>
+        </button>
 
-    <div class="main-panel">
-        <div class="header">
-            <span>🔊</span>
-            <span>Overclocked Audio & Synthesizer Studio</span>
+        <div class="w-8 h-[2px] bg-[#35363c] rounded"></div>
+
+        <button onclick="switchView('server')" id="nav-btn-server" class="w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center font-bold text-base transition-all duration-200 relative group shadow-lg" title="NEXO">
+            <span>N</span>
+            <div id="server-pill" class="absolute left-0 w-1 h-10 bg-white rounded-r-full scale-y-100 transition-transform duration-200"></div>
+        </button>
+    </nav>
+
+    <!-- Secondary Sidebar -->
+    <div id="sidebar" class="absolute md:relative left-[72px] md:left-0 inset-y-0 w-60 bg-sidebarbg flex flex-col z-20 transform -translate-x-full md:translate-x-0 transition-transform duration-200 border-r border-[#1f2023] shrink-0">
+        <div class="h-12 border-b border-[#1f2023] flex items-center justify-between px-4 font-bold text-white text-sm shadow-sm shrink-0">
+            <span id="sidebar-title" class="truncate">NEXO</span>
+            <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <div class="content">
-            <div class="grid">
-                <!-- Tone Generator Card -->
-                <div class="card">
-                    <h3>Oscillator / Tone Synth</h3>
-                    <p style="font-size: 12px; color: #949ba4; margin-bottom: 12px;">Generate real-time browser audio frequencies.</p>
-                    <div class="controls" style="margin-bottom: 12px;">
-                        <button onclick="playTone(261.63)">C4</button>
-                        <button onclick="playTone(329.63)">E4</button>
-                        <button onclick="playTone(392.00)">G4</button>
-                        <button onclick="playTone(523.25)">C5</button>
-                        <button class="secondary" onclick="stopTone()">Stop</button>
-                    </div>
-                    <label style="font-size: 12px;">Frequency: <span id="freq-val">440</span> Hz</label>
-                    <input type="range" min="100" max="1000" value="440" id="freq-slider" oninput="updateFreq(this.value)">
-                </div>
+        <div id="sidebar-content" class="flex-1 overflow-y-auto px-2 py-3 space-y-4"></div>
 
-                <!-- Microphone / Visualizer Card -->
-                <div class="card">
-                    <h3>Microphone Visualizer</h3>
-                    <p style="font-size: 12px; color: #949ba4; margin-bottom: 12px;">Stream live microphone input directly into the visualizer canvas.</p>
-                    <div class="controls">
-                        <button onclick="startMic()">Start Mic</button>
-                        <button class="secondary" onclick="stopMic()">Stop Mic</button>
-                    </div>
-                    <canvas id="visualizer"></canvas>
+        <div class="bg-[#232428] h-14 px-2 flex items-center justify-between shrink-0">
+            <div onclick="editProfile()" class="flex items-center space-x-2 cursor-pointer hover:bg-hoverbg p-1 rounded-md transition flex-1 min-w-0 mr-2">
+                <div class="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0 uppercase" id="user-initial">P</div>
+                <div class="min-w-0">
+                    <div id="display-username" class="text-xs font-bold text-white truncate">Proxy</div>
+                    <div class="text-[10px] text-textmuted">Online</div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Audio File Player Card -->
-            <div class="card">
-                <h3>Local Audio File Player</h3>
-                <p style="font-size: 12px; color: #949ba4; margin-bottom: 12px;">Load and decode any local audio or music file instantly.</p>
-                <div class="controls">
-                    <label class="btn">
-                        📁 Upload Audio File
-                        <input type="file" accept="audio/*" style="display: none;" onchange="loadAudioFile(event)">
-                    </label>
-                    <button class="secondary" id="play-btn" onclick="toggleAudioPlayback()" disabled>Play / Pause</button>
-                </div>
-                <audio id="audio-element" style="width: 100%; margin-top: 15px;" controls></audio>
+    <div id="backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-10 hidden md:hidden"></div>
+
+    <!-- Main Chat Content Panel -->
+    <div class="flex-1 flex flex-col h-full bg-chatbg min-w-0 relative">
+        <div class="h-12 border-b border-[#1f2023] flex items-center px-4 shrink-0 space-x-3 shadow-sm z-10 bg-chatbg">
+            <button onclick="toggleMobileSidebar()" class="md:hidden text-textmuted hover:text-white text-lg"><i class="fa-solid fa-bars"></i></button>
+            <div class="flex items-center space-x-2 min-w-0">
+                <span id="current-chat-icon" class="text-textmuted text-base">#</span>
+                <span id="current-chat-name" class="font-bold text-white text-sm truncate">general</span>
+            </div>
+        </div>
+
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col"></div>
+
+        <div class="p-4 shrink-0 bg-chatbg border-t border-[#26282c]">
+            <div class="bg-[#383a40] rounded-xl flex items-center px-4 py-3 shadow-md">
+                <input id="message-input" type="text" placeholder="Message #general" onkeydown="handleKeydown(event)"
+                    class="w-full bg-transparent text-white placeholder-textmuted text-sm focus:outline-none">
+                <button onclick="sendMessage()" class="text-textmuted hover:text-white ml-3 shrink-0 bg-accent hover:bg-purple-600 w-8 h-8 rounded-lg flex items-center justify-center transition shadow">
+                    <i class="fa-solid fa-paper-plane text-white text-xs"></i>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        let audioCtx = null;
-        let activeOscillator = null;
-        let gainNode = null;
-        let micStream = null;
-        let analyser = null;
-        let canvasCtx = document.getElementById('visualizer').getContext('2d');
-        let animationId = null;
-
-        function initAudioContext() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        function playTone(freq) {
-            initAudioContext();
-            stopTone();
-
-            activeOscillator = audioCtx.createOscillator();
-            gainNode = audioCtx.createGain();
-
-            activeOscillator.type = 'sine';
-            activeOscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-
-            activeOscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            activeOscillator.start();
-            document.getElementById('freq-slider').value = freq;
-            document.getElementById('freq-val').innerText = freq;
-        }
-
-        function stopTone() {
-            if (activeOscillator) {
-                try {
-                    activeOscillator.stop();
-                    activeOscillator.disconnect();
-                } catch(e) {}
-                activeOscillator = null;
-            }
-        }
-
-        function updateFreq(val) {
-            document.getElementById('freq-val').innerText = val;
-            if (activeOscillator) {
-                activeOscillator.frequency.setValueAtTime(val, audioCtx.currentTime);
-            }
-        }
-
-        async function startMic() {
-            initAudioContext();
-            try {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                const source = audioCtx.createMediaStreamSource(micStream);
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256;
-                source.connect(analyser);
-                visualize();
-            } catch (err) {
-                alert("Microphone access denied or unavailable.");
-            }
-        }
-
-        function stopMic() {
-            if (micStream) {
-                micStream.getTracks().forEach(track => track.stop());
-                micStream = null;
-            }
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-            canvasCtx.clearRect(0, 0, 300, 150);
-        }
-
-        function visualize() {
-            const canvas = document.getElementById('visualizer');
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function draw() {
-                animationId = requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-
-                canvasCtx.fillStyle = '#111214';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let x = 0;
-
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = (dataArray[i] / 255) * canvas.height;
-
-                    canvasCtx.fillStyle = '#5865f2';
-                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-                    x += barWidth + 1;
+        let appData = {
+            username: "Proxy",
+            currentView: "server",
+            currentId: "general",
+            servers: [
+                {
+                    id: "nexo",
+                    name: "NEXO",
+                    channels: [
+                        { id: "general", name: "general", type: "text" },
+                        { id: "code", name: "code-scripts", type: "text" },
+                        { id: "lounge", name: "voice-lounge", type: "voice" }
+                    ]
                 }
+            ],
+            dms: [],
+            messages: {
+                "general": [
+                    { user: "System", text: "Welcome to NEXO! Channels and chats ready.", time: "12:00 PM" }
+                ],
+                "code": [
+                    { user: "System", text: "Drop your scripts and code snippets here.", time: "12:01 PM" }
+                ],
+                "lounge": [
+                    { user: "System", text: "Voice channel lobby chat.", time: "12:02 PM" }
+                ]
             }
-            draw();
+        };
+
+        function loadStorage() {
+            const saved = localStorage.getItem('nexo_pure_data');
+            if (saved) {
+                try { appData = JSON.parse(saved); } catch (e) { console.error(e); }
+            }
         }
 
-        function loadAudioFile(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const audioEl = document.getElementById('audio-element');
-                audioEl.src = URL.createObjectURL(file);
-                document.getElementById('play-btn').disabled = false;
-                audioEl.play();
-            }
+        function saveStorage() {
+            localStorage.setItem('nexo_pure_data', JSON.stringify(appData));
         }
 
-        function toggleAudioPlayback() {
-            const audioEl = document.getElementById('audio-element');
-            if (audioEl.paused) {
-                audioEl.play();
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStorage();
+            renderUI();
+        });
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        function switchView(viewType, targetId = null) {
+            appData.currentView = viewType;
+            if (viewType === 'dm') {
+                appData.currentId = targetId || (appData.dms.length > 0 ? appData.dms[0].id : null);
             } else {
-                audioEl.pause();
+                appData.currentId = targetId || 'general';
             }
+            saveStorage();
+            renderUI();
+        }
+
+        function selectChat(id) {
+            appData.currentId = id;
+            if (window.innerWidth < 768) {
+                toggleMobileSidebar();
+            }
+            saveStorage();
+            renderUI();
+        }
+
+        function renderUI() {
+            const dmBtn = document.getElementById('nav-btn-dm');
+            const serverBtn = document.getElementById('nav-btn-server');
+            const dmPill = document.getElementById('dm-pill');
+            const serverPill = document.getElementById('server-pill');
+
+            if (appData.currentView === 'dm') {
+                dmBtn.className = "w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center transition-all duration-200 relative group shadow-lg";
+                serverBtn.className = "w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group";
+                dmPill.classList.add('scale-y-100');
+                serverPill.classList.remove('scale-y-100');
+                serverPill.classList.add('scale-y-0');
+            } else {
+                serverBtn.className = "w-12 h-12 rounded-2xl bg-accent text-white flex items-center justify-center transition-all duration-200 relative group shadow-lg";
+                dmBtn.className = "w-12 h-12 rounded-3xl bg-sidebarbg hover:rounded-2xl hover:bg-accent text-white flex items-center justify-center transition-all duration-200 relative group";
+                serverPill.classList.add('scale-y-100');
+                dmPill.classList.remove('scale-y-100');
+                dmPill.classList.add('scale-y-0');
+            }
+
+            document.getElementById('display-username').innerText = appData.username;
+            document.getElementById('user-initial').innerText = appData.username.charAt(0).toUpperCase();
+
+            const sidebarTitle = document.getElementById('sidebar-title');
+            const sidebarContent = document.getElementById('sidebar-content');
+
+            if (appData.currentView === 'dm') {
+                sidebarTitle.innerText = "Direct Messages";
+                sidebarContent.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
+                            <span>Direct Messages</span>
+                            <button onclick="startDM()" class="hover:text-white" title="New DM"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        ${appData.dms.length === 0 ? '<div class="text-xs text-textmuted px-2 py-4 text-center">No direct messages yet. Click + to add a friend.</div>' : ''}
+                        ${appData.dms.map(d => `
+                            <button onclick="selectChat('${d.id}')" 
+                                class="w-full flex items-center px-2 py-2 rounded-lg text-xs font-medium transition ${appData.currentId === d.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
+                                <div class="w-7 h-7 rounded-full bg-accent/30 text-accent font-bold text-xs flex items-center justify-center mr-2 shrink-0 uppercase">${d.name.charAt(0)}</div>
+                                <div class="text-left truncate">
+                                    <div class="font-bold text-white truncate">${escapeHtml(d.name)}</div>
+                                    <div class="text-[10px] text-textmuted truncate">${d.status}</div>
+                                </div>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                sidebarTitle.innerText = "NEXO";
+                sidebarContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
+                                <span>Text Channels</span>
+                                <button onclick="createChannel('text')" class="hover:text-white"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div class="space-y-[2px]">
+                                ${appData.servers[0].channels.filter(c => c.type === 'text').map(c => `
+                                    <button onclick="selectChat('${c.id}')" 
+                                        class="w-full flex items-center px-2 py-1.5 rounded text-xs font-medium transition ${appData.currentId === c.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
+                                        <span class="mr-1.5 text-sm">#</span>
+                                        <span class="truncate">${c.name}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-xs font-bold text-textmuted px-2 mb-1 uppercase tracking-wider">
+                                <span>Voice Channels</span>
+                                <button onclick="createChannel('voice')" class="hover:text-white"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div class="space-y-[2px]">
+                                ${appData.servers[0].channels.filter(c => c.type === 'voice').map(c => `
+                                    <button onclick="selectChat('${c.id}')" 
+                                        class="w-full flex items-center px-2 py-1.5 rounded text-xs font-medium transition ${appData.currentId === c.id ? 'bg-activebg text-white' : 'text-textmuted hover:bg-hoverbg hover:text-textnormal'}">
+                                        <span class="mr-1.5 text-sm">🔊</span>
+                                        <span class="truncate">${c.name}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let chatName = "general";
+            let chatIcon = "#";
+            if (appData.currentView === 'dm') {
+                const dmObj = appData.dms.find(d => d.id === appData.currentId);
+                chatName = dmObj ? dmObj.name : "Select a DM";
+                chatIcon = "@";
+            } else {
+                const chanObj = appData.servers[0].channels.find(c => c.id === appData.currentId);
+                chatName = chanObj ? chanObj.name : "general";
+                chatIcon = chanObj && chanObj.type === 'voice' ? '🔊' : '#';
+            }
+
+            document.getElementById('current-chat-name').innerText = chatName;
+            document.getElementById('current-chat-icon').innerText = chatIcon;
+            document.getElementById('message-input').placeholder = appData.currentView === 'dm' && appData.dms.length === 0 ? `No DM selected` : `Message ${chatIcon === '#' ? '#' : ''}${chatName}`;
+
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            if (!appData.currentId) {
+                container.innerHTML = '<div class="text-textmuted text-center my-auto text-sm">Select or start a direct message to begin chatting.</div>';
+                return;
+            }
+            const msgs = appData.messages[appData.currentId] || [];
+
+            container.innerHTML = msgs.map(m => `
+                <div class="flex items-start space-x-3">
+                    <div class="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0 uppercase">${m.user.charAt(0)}</div>
+                    <div class="min-w-0">
+                        <div class="flex items-baseline space-x-2">
+                            <span class="font-bold text-white text-xs">${escapeHtml(m.user)}</span>
+                            <span class="text-[10px] text-textmuted">${m.time}</span>
+                        </div>
+                        <p class="text-sm text-textnormal break-words mt-0.5">${escapeHtml(m.text)}</p>
+                    </div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            if (!appData.currentId) return;
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (!appData.messages[appData.currentId]) {
+                appData.messages[appData.currentId] = [];
+            }
+
+            appData.messages[appData.currentId].push({
+                user: appData.username,
+                text: text,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+
+            input.value = '';
+            saveStorage();
+            renderMessages();
+        }
+
+        function handleKeydown(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function createChannel(type) {
+            const name = prompt(`Enter ${type} channel name:`);
+            if (!name || !name.trim()) return;
+            const id = name.trim().toLowerCase().replace(/\s+/g, '-');
+
+            if (!appData.servers[0].channels.some(c => c.id === id)) {
+                appData.servers[0].channels.push({ id, name: id, type });
+                appData.messages[id] = [{ user: "System", text: `Channel #${id} created.`, time: "Now" }];
+                saveStorage();
+                renderUI();
+            }
+        }
+
+        function startDM() {
+            const name = prompt("Enter username to message:");
+            if (!name || !name.trim()) return;
+            const cleanName = name.trim();
+            const id = 'dm-' + cleanName.toLowerCase().replace(/\s+/g, '-');
+
+            if (!appData.dms.some(d => d.id === id)) {
+                appData.dms.push({ id, name: cleanName, status: "Active" });
+                appData.messages[id] = [{ user: cleanName, text: `Direct message thread started with ${cleanName}.`, time: "Now" }];
+                saveStorage();
+                switchView('dm', id);
+            } else {
+                switchView('dm', id);
+            }
+        }
+
+        function editProfile() {
+            const newName = prompt("Enter your new handle:", appData.username);
+            if (!newName || !newName.trim()) return;
+            appData.username = newName.trim().substring(0, 16);
+            saveStorage();
+            renderUI();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
 </html>
-
